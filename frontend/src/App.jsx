@@ -52,6 +52,25 @@ function StageTracker({ activeIndex, status }) {
   );
 }
 
+function SourceChip({ index, source }) {
+  const [expanded, setExpanded] = useState(false);
+  const matchPercent = (source.score * 100).toFixed(1);
+  return (
+    <div className={`source-chip ${expanded ? "expanded" : ""}`} onClick={() => setExpanded(!expanded)}>
+      <div className="source-chip-header">
+        <span className="source-chip-index">[{index}]</span>
+        <span className="source-chip-name">{source.source}</span>
+        <span className="source-chip-score">{matchPercent}% Match</span>
+      </div>
+      {expanded && (
+        <div className="source-chip-snippet">
+          {source.text}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
   const [chunksStored, setChunksStored] = useState(null);
   const [backendOnline, setBackendOnline] = useState(true);
@@ -230,9 +249,7 @@ export default function App() {
               {m.sources && m.sources.length > 0 && (
                 <div className="sources">
                   {m.sources.map((s, j) => (
-                    <span key={j} className="source-chip">
-                      {s.source} · {s.score}
-                    </span>
+                    <SourceChip key={j} index={j + 1} source={s} />
                   ))}
                 </div>
               )}

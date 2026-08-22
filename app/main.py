@@ -91,5 +91,5 @@ def query(req: QueryRequest):
 
     return {
         "answer": safe_answer,
-        "sources": [{"source": c["source"], "score": round(c["score"], 3)} for c in chunks],
+        "sources": [{"source": c["source"], "text": c["text"], "score": round(c["score"], 3)} for c in chunks],
     }
