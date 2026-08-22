@@ -1,0 +1,22 @@
+Company HR Policy Handbook
+
+Leave Policy
+Employees are entitled to 21 days of paid annual leave per calendar year, prorated for new joiners based on their date of joining. Unused leave up to 10 days may be carried forward to the next year.
+
+Paternity Leave
+Male employees are entitled to 15 days of paid paternity leave, to be availed within 6 months of the child's birth. A request must be submitted to HR at least 2 weeks in advance where possible.
+
+Maternity Leave
+Female employees are entitled to 26 weeks of paid maternity leave as per the Maternity Benefit Act, applicable for the first two children. For the third child onward, the entitlement is 12 weeks.
+
+Work From Home Policy
+Employees may work from home up to 2 days per week with manager approval. Engineering and Support teams must maintain core hours of 10 AM to 5 PM IST for meeting availability.
+
+Reimbursement Policy
+Employees can claim reimbursement for internet bills up to INR 1,500 per month and mobile bills up to INR 1,000 per month, submitted with valid invoices through the finance portal.
+
+Notice Period
+The standard notice period for resignation is 60 days for employees at the Senior Engineer level and above, and 30 days for all other roles. Buyout of notice period is subject to manager and HR approval.
+
+Code of Conduct
+Employees must not share confidential company information, including client data, source code, or internal API credentials, with any external party. Violations may result in disciplinary action including termination.

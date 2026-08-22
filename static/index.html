@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>RAG System — Test UI</title>
+<style>
+  :root {
+    --bg: #0b0f14;
+    --panel: #121820;
+    --border: #232c38;
+    --text: #e6edf3;
+    --muted: #8b98a5;
+    --accent: #22c55e;
+    --user-bubble: #1d4ed8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+  .wrap { width: 100%; max-width: 760px; }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 10px; }
+
+  input[type=text], input[type=file] {
+    width: 100%;
+    background: #0d1420;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 14px;
+  }
+  button {
+    background: var(--accent);
+    color: #06210f;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  button:hover { opacity: 0.9; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .row { display: flex; gap: 8px; }
+  .row input[type=text] { flex: 1; }
+
+  #chat { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; min-height: 60px; }
+  .msg { padding: 10px 14px; border-radius: 8px; font-size: 14px; line-height: 1.5; max-width: 90%; }
+  .msg.user { align-self: flex-end; background: var(--user-bubble); }
+  .msg.bot { align-self: flex-start; background: #16211a; border: 1px solid #1f3326; }
+  .msg.err { align-self: flex-start; background: #2a1414; border: 1px solid #4a1f1f; color: #ff8080; }
+  .sources { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+  #ingestStatus, #status { font-size: 12px; color: var(--muted); margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>RAG System</h1>
+  <div class="sub">Ingestion Pipeline → Vector DB → Guardrails → Claude</div>
+
+  <div class="panel">
+    <h2>1. Ingest a document</h2>
+    <input type="file" id="fileInput" accept=".pdf,.txt,.md" />
+    <button onclick="ingest()" id="ingestBtn">Upload &amp; Index</button>
+    <div id="ingestStatus"></div>
+    <div id="status">Checking status…</div>
+  </div>
+
+  <div class="panel">
+    <h2>2. Ask a question</h2>
+    <div id="chat"></div>
+    <div class="row">
+      <input type="text" id="queryInput" placeholder="e.g. What is our paternity leave policy?" onkeydown="if(event.key==='Enter') ask()" />
+      <button onclick="ask()" id="askBtn">Ask</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "";
+
+async function refreshStatus() {
+  try {
+    const res = await fetch(API + "/status");
+    const data = await res.json();
+    document.getElementById("status").textContent = `Chunks stored in vector DB: ${data.chunks_stored}`;
+  } catch (e) {
+    document.getElementById("status").textContent = "Backend not reachable.";
+  }
+}
+refreshStatus();
+
+async function ingest() {
+  const fileInput = document.getElementById("fileInput");
+  const btn = document.getElementById("ingestBtn");
+  const statusEl = document.getElementById("ingestStatus");
+
+  if (!fileInput.files.length) {
+    statusEl.textContent = "Pick a file first.";
+    return;
+  }
+
+  btn.disabled = true;
+  statusEl.textContent = "Uploading & indexing…";
+
+  const form = new FormData();
+  form.append("file", fileInput.files[0]);
+
+  try {
+    const res = await fetch(API + "/ingest", { method: "POST", body: form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Ingest failed");
+    statusEl.textContent = `Indexed "${data.filename}" — ${data.chunks_added} chunks added.`;
+    refreshStatus();
+  } catch (e) {
+    statusEl.textContent = "Error: " + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function addMessage(text, cls, sources) {
+  const chat = document.getElementById("chat");
+  const div = document.createElement("div");
+  div.className = "msg " + cls;
+  div.textContent = text;
+  if (sources && sources.length) {
+    const s = document.createElement("div");
+    s.className = "sources";
+    s.textContent = "Sources: " + sources.map(x => `${x.source} (score ${x.score})`).join(", ");
+    div.appendChild(s);
+  }
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+async function ask() {
+  const input = document.getElementById("queryInput");
+  const btn = document.getElementById("askBtn");
+  const query = input.value.trim();
+  if (!query) return;
+
+  addMessage(query, "user");
+  input.value = "";
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(API + "/query", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Query failed");
+    addMessage(data.answer, "bot", data.sources);
+  } catch (e) {
+    addMessage("Error: " + e.message, "err");
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>

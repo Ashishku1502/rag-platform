@@ -1,0 +1,284 @@
+/* ---------------------------------------------------------------
+   CognitAI RAG Platform — Premium Glassmorphism Theme
+--------------------------------------------------------------- */
+:root {
+  --bg-base: #0B0E14; /* Deep, dark background */
+  --bg-panel: rgba(18, 22, 31, 0.6); /* Glass panel */
+  --bg-panel-hover: rgba(25, 30, 42, 0.8);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-glow: rgba(108, 92, 231, 0.3);
+  
+  --text-primary: #F1F2F6;
+  --text-secondary: #A0A5B5;
+  
+  --accent-primary: #6C5CE7;
+  --accent-gradient: linear-gradient(135deg, #6C5CE7 0%, #00CEC9 100%);
+  --accent-glow: rgba(108, 92, 231, 0.5);
+  --danger: #FF7675;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background-color: var(--bg-base);
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(108, 92, 231, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 85% 30%, rgba(0, 206, 201, 0.08) 0%, transparent 40%);
+  background-attachment: fixed;
+  color: var(--text-primary);
+  font-family: 'Outfit', sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+  min-height: 100vh;
+}
+
+/* ---------- Typography ---------- */
+h1, h2, h3 { margin: 0; font-weight: 600; }
+h1 { font-size: 28px; letter-spacing: -0.02em; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+h2 { font-size: 14px; letter-spacing: 0.08em; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 16px; }
+
+/* ---------- Main Sheet Layout ---------- */
+.sheet {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* No crop marks needed for this design, hide them */
+.crop { display: none; }
+
+/* ---------- Title Block ---------- */
+.titleblock {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.titleblock-main p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 4px 0 0;
+  font-weight: 300;
+}
+
+.titleblock-meta {
+  display: flex;
+  gap: 32px;
+}
+.titleblock-meta > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.meta-key { font-size: 11px; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.05em; }
+.meta-val { font-size: 16px; font-weight: 500; }
+.meta-val.ok { color: #00CEC9; text-shadow: 0 0 10px rgba(0, 206, 201, 0.4); }
+.meta-val.err { color: var(--danger); text-shadow: 0 0 10px rgba(255, 118, 117, 0.4); }
+
+
+/* ---------- Glass Panels ---------- */
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 24px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  transition: border-color 0.3s ease;
+}
+.panel:hover {
+  border-color: var(--border-glow);
+}
+
+/* ---------- Pipeline Tracker ---------- */
+.tracker {
+  display: flex;
+  align-items: flex-start;
+  padding: 10px 0;
+  overflow-x: auto;
+}
+.tracker::-webkit-scrollbar { height: 4px; }
+.tracker::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+.tracker-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-width: 80px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+.node-dot {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-color);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tracker-node[data-state="active"] .node-dot {
+  border-color: transparent;
+  background: var(--accent-gradient);
+  box-shadow: 0 0 20px var(--accent-glow);
+  transform: scale(1.1);
+  animation: float 2s ease-in-out infinite;
+}
+.tracker-node[data-state="done"] .node-dot {
+  border-color: var(--accent-primary);
+  background: rgba(108, 92, 231, 0.1);
+}
+.tracker-node[data-state="error"] .node-dot {
+  border-color: var(--danger);
+  background: rgba(255, 118, 117, 0.1);
+  box-shadow: 0 0 15px rgba(255, 118, 117, 0.4);
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) scale(1.1); }
+  50% { transform: translateY(-4px) scale(1.1); }
+}
+
+.node-label { font-size: 11px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.05em; text-align: center; }
+.node-sub { font-size: 10px; color: var(--text-secondary); text-align: center; }
+
+.tracker-wire {
+  flex: 1;
+  height: 2px;
+  background: var(--border-color);
+  margin-top: 21px; /* Centers with the 44px node-dot */
+  min-width: 30px;
+  transition: background 0.5s ease;
+  z-index: 1;
+}
+.tracker-wire.lit {
+  background: var(--accent-gradient);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* ---------- Ingest Panel ---------- */
+.ingest-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.file-input {
+  flex: 1;
+  min-width: 240px;
+  display: flex;
+  align-items: center;
+  border: 1px dashed var(--border-color);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.2s ease;
+}
+.file-input:hover { border-color: var(--accent-primary); color: var(--text-primary); background: rgba(108, 92, 231, 0.05); }
+.file-input input { display: none; }
+
+button {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+button:hover:not(:disabled) {
+  background: var(--accent-gradient);
+  border-color: transparent;
+  box-shadow: 0 4px 15px var(--accent-glow);
+}
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button:focus-visible, .file-input:focus-within { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
+
+.hint { font-size: 12px; color: var(--text-secondary); margin: 12px 0 0; }
+
+/* ---------- Chat ---------- */
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 8px;
+  margin-bottom: 20px;
+}
+.chat::-webkit-scrollbar { width: 6px; }
+.chat::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 6px; }
+
+.empty { font-size: 14px; color: var(--text-secondary); text-align: center; padding: 40px; border: 1px dashed var(--border-color); border-radius: 12px; }
+
+.bubble {
+  padding: 14px 18px;
+  border-radius: 16px;
+  font-size: 15px;
+  max-width: 85%;
+  line-height: 1.6;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.bubble p { margin: 0; }
+.bubble.user {
+  align-self: flex-end;
+  background: var(--bg-panel-hover);
+  border-bottom-right-radius: 4px;
+}
+.bubble.bot {
+  align-self: flex-start;
+  background: rgba(108, 92, 231, 0.1);
+  border: 1px solid var(--border-glow);
+  border-bottom-left-radius: 4px;
+}
+.bubble.err {
+  align-self: flex-start;
+  background: rgba(255, 118, 117, 0.1);
+  border: 1px solid rgba(255, 118, 117, 0.3);
+  color: var(--danger);
+  border-bottom-left-radius: 4px;
+}
+
+.sources { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color); }
+.source-chip { font-size: 11px; color: var(--text-secondary); background: rgba(255, 255, 255, 0.05); padding: 4px 10px; border-radius: 20px; }
+
+.ask-row { display: flex; gap: 12px; }
+.ask-row input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-primary);
+  padding: 14px 18px;
+  font-family: inherit;
+  font-size: 15px;
+  transition: border-color 0.2s ease;
+}
+.ask-row input:focus { border-color: var(--accent-primary); outline: none; background: rgba(255, 255, 255, 0.05); }
+
+@media (max-width: 600px) {
+  .titleblock { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .titleblock-meta { width: 100%; justify-content: space-between; }
+  .ask-row { flex-direction: column; }
+}
