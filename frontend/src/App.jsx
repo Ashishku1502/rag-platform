@@ -190,11 +190,6 @@ export default function App() {
 
   return (
     <div className="sheet">
-      <div className="crop crop-tl" />
-      <div className="crop crop-tr" />
-      <div className="crop crop-bl" />
-      <div className="crop crop-br" />
-
       <header className="titleblock">
         <div className="titleblock-main">
           <h1>RAG-01</h1>
@@ -231,7 +226,11 @@ export default function App() {
             <span>{file ? file.name : "Choose file (.pdf / .txt / .md)"}</span>
           </label>
           <button onClick={handleIngest} disabled={ingesting}>
-            {ingesting ? "INDEXING…" : "UPLOAD + INDEX"}
+            {ingesting ? (
+              <span className="loader-dots">
+                INDEXING<span></span><span></span><span></span>
+              </span>
+            ) : "UPLOAD + INDEX"}
           </button>
         </div>
         {ingestMsg && <p className="hint">{ingestMsg}</p>}
@@ -266,7 +265,11 @@ export default function App() {
             onKeyDown={(e) => e.key === "Enter" && handleAsk()}
           />
           <button onClick={handleAsk} disabled={asking || !queryText.trim()}>
-            {asking ? "RUNNING…" : "RUN QUERY"}
+            {asking ? (
+              <span className="loader-dots">
+                RUNNING<span></span><span></span><span></span>
+              </span>
+            ) : "RUN QUERY"}
           </button>
         </div>
       </section>

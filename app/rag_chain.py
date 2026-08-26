@@ -3,10 +3,10 @@ Stage 5: LLM Synthesis & Output
 - Constructs a grounded system prompt from retrieved chunks
 - Calls Claude to synthesize a natural-language answer
 """
-from anthropic import Anthropic
-from app.config import ANTHROPIC_API_KEY, ANTHROPIC_MODEL
+from huggingface_hub import InferenceClient
+from app.config import HUGGINGFACE_API_KEY, HUGGINGFACE_MODEL
 
-_client = Anthropic(api_key=ANTHROPIC_API_KEY)
+_client = InferenceClient(api_key=HUGGINGFACE_API_KEY, timeout=15)
 
 
 def build_context(chunks: list[dict]) -> str:
@@ -37,13 +37,33 @@ def generate_answer(query: str, chunks: list[dict]) -> str:
     context = build_context(chunks)
     system_prompt = SYSTEM_PROMPT_TEMPLATE.format(context=context)
 
-    response = _client.messages.create(
-        model=ANTHROPIC_MODEL,
-        max_tokens=600,
-        system=system_prompt,
-        messages=[{"role": "user", "content": query}],
-    )
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": query}
+    ]
+    
+    import requests
+    
+    headers = {
+        "Authorization": f"Bearer {HUGGINGFACE_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    # We use a direct requests call to strictly enforce a timeout, 
+    # as the InferenceClient can sometimes hang or retry infinitely.
+    url = f"https://router.huggingface.co/hf-inference/models/{HUGGINGFACE_MODEL}/v1/chat/completions"
+    
+    try:
+        response = requests.post(
+            url, 
+            headers=headers, 
+            json={"model": HUGGINGFACE_MODEL, "messages": messages, "max_tokens": 600},
+            timeout=15
+        )
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"]
+    except requests.exceptions.Timeout:
+        return "The Hugging Face model provider timed out after 15 seconds. Please try again later or use a different model."
+    except Exception as e:
+        return f"Error communicating with Hugging Face: {str(e)}"
 
-    return "".join(
-        block.text for block in response.content if block.type == "text"
-    )

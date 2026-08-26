@@ -3,21 +3,44 @@ Stage 2 & 3: Vector Embedding Generation + Vector Database Storage
 - Uses a free, local sentence-transformers model to embed text (no API key needed)
 - Stores vectors + original text in ChromaDB (local, persistent, file-based)
 """
+import threading
 from chromadb import PersistentClient
 from chromadb.utils import embedding_functions
 from app.config import CHROMA_PATH, COLLECTION_NAME, EMBEDDING_MODEL_NAME, TOP_K
 
-_embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
-    model_name=EMBEDDING_MODEL_NAME
-)
+# ---------------------------------------------------------------------------
+# Lazy-initialize the embedding function and the ChromaDB client / collection.
+# Loading sentence-transformers can take 30–120 s on first run (model download).
+# Deferring to first use means the server starts instantly and the cost is paid
+# only when the first /ingest or /query request arrives.
+# ---------------------------------------------------------------------------
+_lock = threading.Lock()
+_embedding_fn = None
+_client = None
+_collection = None
 
-_client = PersistentClient(path=CHROMA_PATH)
 
-_collection = _client.get_or_create_collection(
-    name=COLLECTION_NAME,
-    embedding_function=_embedding_fn,
-    metadata={"hnsw:space": "cosine"},  # cosine similarity search
-)
+def _get_collection():
+    """Return the ChromaDB collection, initializing on first call (thread-safe)."""
+    global _embedding_fn, _client, _collection
+    if _collection is not None:
+        return _collection
+
+    with _lock:
+        # Double-checked locking: re-check after acquiring the lock.
+        if _collection is not None:
+            return _collection
+
+        _embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
+            model_name=EMBEDDING_MODEL_NAME
+        )
+        _client = PersistentClient(path=CHROMA_PATH)
+        _collection = _client.get_or_create_collection(
+            name=COLLECTION_NAME,
+            embedding_function=_embedding_fn,
+            metadata={"hnsw:space": "cosine"},  # cosine similarity search
+        )
+    return _collection
 
 
 def add_chunks(chunks: list[dict]) -> int:
@@ -29,11 +52,12 @@ def add_chunks(chunks: list[dict]) -> int:
     if not chunks:
         return 0
 
+    col = _get_collection()
     ids = [f"{c['source']}::{c['chunk_id']}" for c in chunks]
     documents = [c["text"] for c in chunks]
-    metadatas = [{"source": c["source"], "chunk_id": c["chunk_id"]} for c in chunks]
+    metadatas = [{"source": c["source"], "chunk_id": str(c["chunk_id"])} for c in chunks]
 
-    _collection.upsert(ids=ids, documents=documents, metadatas=metadatas)
+    col.upsert(ids=ids, documents=documents, metadatas=metadatas)
     return len(chunks)
 
 
@@ -42,7 +66,13 @@ def retrieve(query: str, top_k: int = TOP_K) -> list[dict]:
     Embed the query and run cosine-similarity search against the vector DB.
     Returns the top_k most relevant chunks with their source metadata.
     """
-    results = _collection.query(query_texts=[query], n_results=top_k)
+    col = _get_collection()
+    count = col.count()
+    if count == 0:
+        return []
+    # ChromaDB raises if n_results > number of stored items
+    n = min(top_k, count)
+    results = col.query(query_texts=[query], n_results=n)
 
     if not results["documents"] or not results["documents"][0]:
         return []
@@ -56,4 +86,16 @@ def retrieve(query: str, top_k: int = TOP_K) -> list[dict]:
 
 
 def collection_count() -> int:
-    return _collection.count()
+    """
+    Return the number of chunks stored.
+
+    This is intentionally non-blocking: if the collection has not been
+    initialized yet (i.e., no ingest or query has been made), we return 0
+    immediately so the /status health-check endpoint stays fast.
+    """
+    if _collection is None:
+        return 0
+    try:
+        return _collection.count()
+    except Exception:
+        return 0

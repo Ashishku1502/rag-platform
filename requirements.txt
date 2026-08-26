@@ -2,7 +2,8 @@ fastapi
 uvicorn[standard]
 chromadb
 sentence-transformers
-anthropic
+huggingface_hub
 pypdf
 python-multipart
 python-dotenv
+requests
