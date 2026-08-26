@@ -1,8 +1,8 @@
 {
   "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+    { "source": "/query", "destination": "https://rag-backend-abc123.onrender.com/query" },
+    { "source": "/ingest", "destination": "https://rag-backend-abc123.onrender.com/ingest" },
+    { "source": "/status", "destination": "https://rag-backend-abc123.onrender.com/status" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
